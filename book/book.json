@@ -1,0 +1,222 @@
+{
+ "title": "멘사코리아 회지 Vol.126 (2026년 6월호)",
+ "zine_id": "mkj_vol126",
+ "pages": 77,
+ "ratio": 0.70817,
+ "img": {
+  "pages": "book/pages/{n}.webp",
+  "hi": "book/hi/{n}.webp",
+  "thumbs": "book/thumbs/{n}.webp",
+  "pad": 3
+ },
+ "pdf": "",
+ "page_offset": 2,
+ "links": {
+  "5": [
+   {
+    "x": 36.39,
+    "y": 78.2,
+    "w": 19.4,
+    "h": 0.96,
+    "url": "https://www.mensakorea.org/bbs/board.php?bo_table=album&utm_source=zine&utm_medium=pdf&utm_campaign=mkj_vol126&utm_content=p5_mensa_gallery",
+    "id": "p5_mensa_gallery"
+   }
+  ],
+  "6": [
+   {
+    "x": 11.89,
+    "y": 23.15,
+    "w": 17.42,
+    "h": 2.78,
+    "url": "https://test.mensakorea.kr/test/intro.php?utm_source=zine&utm_medium=pdf&utm_campaign=mkj_vol126&utm_content=p6_mensa_test",
+    "id": "p6_mensa_test"
+   },
+   {
+    "x": 11.89,
+    "y": 44.43,
+    "w": 15.28,
+    "h": 2.9,
+    "url": "https://dongne.cc/?utm_source=zine&utm_medium=pdf&utm_campaign=mkj_vol126&utm_content=p6_dongne_site",
+    "id": "p6_dongne_site"
+   },
+   {
+    "x": 26.78,
+    "y": 44.41,
+    "w": 15.34,
+    "h": 2.94,
+    "url": "https://x.com/DONGNECRAFT?utm_source=zine&utm_medium=pdf&utm_campaign=mkj_vol126&utm_content=p6_dongne_x",
+    "id": "p6_dongne_x"
+   },
+   {
+    "x": 65.27,
+    "y": 58.28,
+    "w": 18.82,
+    "h": 2.63,
+    "url": "https://www.mensakorea.org/bbs/board.php?bo_table=sig&utm_source=zine&utm_medium=pdf&utm_campaign=mkj_vol126&utm_content=p6_dmension_sig",
+    "id": "p6_dmension_sig"
+   },
+   {
+    "x": 65.27,
+    "y": 60.65,
+    "w": 18.92,
+    "h": 2.7,
+    "url": "https://www.instagram.com/dmsnsig/?utm_source=zine&utm_medium=pdf&utm_campaign=mkj_vol126&utm_content=p6_dmension_ig",
+    "id": "p6_dmension_ig"
+   },
+   {
+    "x": 64.61,
+    "y": 82.27,
+    "w": 17.92,
+    "h": 2.78,
+    "url": "https://store.mensakorea.kr/shop/couponzone.php?utm_source=zine&utm_medium=pdf&utm_campaign=mkj_vol126&utm_content=p6_mensa_store_coupon",
+    "id": "p6_mensa_store_coupon"
+   }
+  ],
+  "7": [
+   {
+    "x": 62.47,
+    "y": 14.73,
+    "w": 25.53,
+    "h": 2.9,
+    "url": "https://bn-system.com/?utm_source=zine&utm_medium=pdf&utm_campaign=mkj_vol126&utm_content=p7_bnsystem_home",
+    "id": "p7_bnsystem_home"
+   },
+   {
+    "x": 62.47,
+    "y": 17.51,
+    "w": 25.53,
+    "h": 2.9,
+    "url": "https://bn-system.com/it_sub/portfolio.php?utm_source=zine&utm_medium=pdf&utm_campaign=mkj_vol126&utm_content=p7_bnsystem_portfolio",
+    "id": "p7_bnsystem_portfolio"
+   },
+   {
+    "x": 74.63,
+    "y": 38.45,
+    "w": 17.52,
+    "h": 2.78,
+    "url": "https://www.mensakorea.org/bbs/board.php?bo_table=sig&utm_source=zine&utm_medium=pdf&utm_campaign=mkj_vol126&utm_content=p7_domaine_sig",
+    "id": "p7_domaine_sig"
+   },
+   {
+    "x": 16.1,
+    "y": 66.11,
+    "w": 25.64,
+    "h": 2.82,
+    "url": "https://play.google.com/store/apps/details?id=com.roadi.app&referrer=campaign_mensa&utm_source=zine&utm_medium=pdf&utm_campaign=mkj_vol126&utm_content=p7_roadi_app",
+    "id": "p7_roadi_app"
+   },
+   {
+    "x": 15.83,
+    "y": 87.23,
+    "w": 15.98,
+    "h": 2.66,
+    "url": "https://www.mensakorea.org/bbs/board.php?bo_table=sig&utm_source=zine&utm_medium=pdf&utm_campaign=mkj_vol126&utm_content=p7_sss_sig",
+    "id": "p7_sss_sig"
+   }
+  ]
+ },
+ "toc": [
+  {
+   "section": "프롤로그"
+  },
+  {
+   "title": "편집인 칼럼",
+   "page": 1
+  },
+  {
+   "section": "커버스토리"
+  },
+  {
+   "title": "2026년 5월 서울 오리엔테이션",
+   "page": 3
+  },
+  {
+   "section": "교육위원회"
+  },
+  {
+   "title": "배우니 즐겁지 아니한가 – 2026 교육위원회 봄 아카데미 후기",
+   "page": 6
+  },
+  {
+   "section": "멘사소식"
+  },
+  {
+   "title": "세상을 바꾸는 나의 피 한 방울 – International Bloody Mensans Challenge 2025",
+   "page": 10
+  },
+  {
+   "section": "시그연합회"
+  },
+  {
+   "title": "매그너스 시그의 체스 입문 모임",
+   "page": 15
+  },
+  {
+   "section": "그 멘산이 사는 이야기"
+  },
+  {
+   "title": "“찰나를 기록하고 사람을 잇다” – 사진가 정재원 멘산 인터뷰",
+   "page": 20
+  },
+  {
+   "section": "책 따라 생각하나"
+  },
+  {
+   "title": "책으로 읽은 색, 책갈피로 피어나다",
+   "page": 25
+  },
+  {
+   "section": "이거, 꽤나 유익할지도"
+  },
+  {
+   "title": "영어로 말하고 싶다면, 책상에서 일어나라",
+   "page": 31
+  },
+  {
+   "section": "나의 작은 여행기"
+  },
+  {
+   "title": "아제르바이잔 조지아 아르메니아 여행기 – 맛과 향으로 기록하는 코카서스 1부",
+   "page": 36
+  },
+  {
+   "section": "리더스 칼럼"
+  },
+  {
+   "title": "때로는 찬란한, 때로는 참람한 – 한눈에 짚어 보는 미국의 냉전사(3부)",
+   "page": 45
+  },
+  {
+   "section": "봉사활동 수기"
+  },
+  {
+   "title": "조약돌에 담긴 세상 – 13년 동안 이어온 섬마을 봉사활동 이야기",
+   "page": 58
+  },
+  {
+   "section": "게임인 이야기"
+  },
+  {
+   "title": "게임에 활용되는 AI",
+   "page": 63
+  },
+  {
+   "section": "Mensa World Journal"
+  },
+  {
+   "title": "MWJ May 2026",
+   "page": 67
+  },
+  {
+   "title": "MWJ June 2026",
+   "page": 71
+  },
+  {
+   "section": "에필로그"
+  },
+  {
+   "title": "편집후기",
+   "page": 75
+  }
+ ]
+}
