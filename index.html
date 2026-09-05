@@ -20,6 +20,7 @@ window.ZINE_CONFIG = {
   THEME: "light",                       // "light" 또는 "dark"
   ACCENT: "#2f6df6",                    // 포인트 색
   BACKGROUND: "",                       // 배경색 직접 지정. 예: "#f3efe6"  (비우면 기본)
+  UI: "base",                           // 화면 구성: "base" | "a"(항상 보이는 탐색) | "b"(한 번에 탐색) | "c"(표지 홈 + 섹션 칩)
   SHOW_EVENT_LOG: false,                // true 면 '추적 로그' 버튼이 생겨 전송 데이터를 눈으로 확인 (테스트용)
 
   // ---- 목차 ----  비워두면 book.json 의 목차 사용. 뷰어 주소 뒤에 ?edit=1 을 붙이면 목차 편집기가 열립니다.
@@ -179,18 +180,20 @@ window.ZINE_CONFIG = {
   .ev .t span{color:var(--muted);font-variant-numeric:tabular-nums}
   .ev code{display:block;margin-top:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;color:var(--muted);white-space:pre-wrap;word-break:break-all}
 
-  /* ---- 확대 보기 ---- */
-  #zoom{position:absolute;inset:0;z-index:60;background:#141518;display:flex;flex-direction:column;color:#fff}
-  #zoomBar{flex:none;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;padding-top:env(safe-area-inset-top)}
-  #zoomBar .grp{display:flex;align-items:center;gap:2px}
-  #zoomBar .ib{color:#fff}
-  #zoomBar .ib:hover{background:rgba(255,255,255,.12)}
-  #zoomInfo{font-size:13px;color:#cfd3d9;padding:0 8px;font-variant-numeric:tabular-nums}
-  #zoomScroll{flex:1;overflow:auto;cursor:grab;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
-  #zoomScroll.drag{cursor:grabbing}
-  #zoomInner{display:flex;justify-content:safe center;align-items:flex-start;gap:0;padding:12px;min-width:100%;min-height:100%;width:max-content}
-  #zoomInner img,#zoomInner canvas{height:var(--zh,800px);width:auto;display:block;background:#fff;box-shadow:0 10px 40px rgba(0,0,0,.5);-webkit-user-drag:none}
-
+  /* ---- 제자리 확대 ---- */
+  #book{transform-origin:0 0;will-change:transform}
+  #book.anim{transition:transform .28s cubic-bezier(.2,.8,.2,1),opacity .35s}
+  body.zoomed .stf__block{pointer-events:none}
+  body.zoomed .pg .links a{pointer-events:auto}
+  body.zoomed #stage{cursor:grab;touch-action:none;overflow:hidden}
+  body.zoomed.panning #stage{cursor:grabbing}
+  body.zoomed .page{box-shadow:0 6px 24px rgba(0,0,0,.28)}
+  #zoomHint{position:absolute;left:50%;top:calc(66px + env(safe-area-inset-top));transform:translateX(-50%) translateY(-6px);z-index:35;display:flex;align-items:center;gap:8px;
+    padding:6px 8px 6px 14px;border-radius:999px;background:rgba(28,30,35,.9);color:#fff;font-size:12.5px;font-variant-numeric:tabular-nums;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;white-space:nowrap}
+  body.zoomed #zoomHint{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+  #zoomHint button{border:0;background:rgba(255,255,255,.16);color:#fff;font:inherit;font-size:12px;padding:5px 10px;border-radius:999px;cursor:pointer}
+  #zoomHint button:hover{background:rgba(255,255,255,.28)}
+  @media (max-width:700px){ #zoomHint{top:auto;bottom:calc(96px + env(safe-area-inset-bottom))} body.ui-a #zoomHint{bottom:calc(150px + env(safe-area-inset-bottom))} }
   /* ---- 로더 / 토스트 ---- */
   #loader{position:absolute;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
     background:var(--bgc, radial-gradient(ellipse at 50% 35%, var(--bg) 0%, var(--bg2) 100%));transition:opacity .4s}
@@ -229,6 +232,100 @@ window.ZINE_CONFIG = {
     .side.open{transform:none}
     .page{box-shadow:0 4px 18px rgba(0,0,0,.25)}
   }
+
+  /* ================= 화면 구성 안 ================= */
+  #stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;min-height:0;min-width:0;align-self:stretch}
+
+  /* 필름스트립 (A안) */
+  #strip{flex:none;padding:8px 12px 2px;overflow:hidden}
+  .strip-track{display:flex;gap:8px;overflow-x:auto;padding:4px 4px 6px;scrollbar-width:none;scroll-behavior:smooth}
+  .strip-track::-webkit-scrollbar{display:none}
+  .st{flex:none;width:52px;aspect-ratio:var(--r,0.707);border-radius:3px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);cursor:pointer;border:2px solid transparent;opacity:.75;transition:opacity .15s,transform .15s,border-color .15s;position:relative}
+  .st img{width:100%;height:100%;display:block;object-fit:cover}
+  .st:hover{opacity:1;transform:translateY(-2px)}
+  .st.on{opacity:1;border-color:var(--accent)}
+  .st i{position:absolute;left:0;right:0;bottom:0;font-style:normal;font-size:9px;text-align:center;background:rgba(0,0,0,.45);color:#fff;padding:1px 0}
+  .st.sec::before{content:attr(data-sec);position:absolute;left:0;top:0;right:0;font-size:8px;line-height:1.2;padding:2px 3px;background:var(--accent);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* A안: 목차 상시 도킹 */
+  body.ui-a #area{display:flex;align-items:stretch}
+  body.ui-a #toc{position:relative;top:auto;bottom:auto;left:auto;right:auto;transform:none!important;visibility:visible!important;width:280px;height:auto;flex:none;
+    background:transparent;border:0;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0 0 0 8px;transition:none}
+  body.ui-a #toc .hd{padding:6px 12px 4px 18px}
+  body.ui-a #tocClose{display:none}
+  body.ui-a #tocBtn,body.ui-a #thumbsBtn,body.ui-a #tocBtn + .sep{display:none}
+  body.ui-a #strip[hidden]{display:block!important}
+  @media (max-width:700px){
+    body.ui-a #area{display:block}
+    body.ui-a #stage{position:absolute;inset:0}
+    body.ui-a #toc{position:absolute;width:auto;top:auto;left:0;right:0;bottom:0;height:62%;transform:translateY(100%)!important;visibility:hidden!important;background:var(--panel);border-top:1px solid var(--panel-line);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:0;transition:transform .28s cubic-bezier(.2,.8,.2,1),visibility 0s .28s}
+    body.ui-a #toc.open{transform:none!important;visibility:visible!important;transition-delay:0s}
+    body.ui-a #tocClose{display:inline-flex}
+    body.ui-a #tocBtn{display:inline-flex}
+    body.ui-a #bottom{padding-top:4px}
+    body.ui-a #strip{position:absolute;left:0;right:0;bottom:calc(74px + env(safe-area-inset-bottom));padding:0 8px;z-index:29;transition:transform .25s,opacity .25s;
+      background:linear-gradient(to top,var(--bg2) 0%,color-mix(in srgb,var(--bg2) 60%,transparent) 100%)}
+    body.ui-a .st{width:40px}
+    body.ui-a.chrome-hidden #strip{transform:translateY(120%);opacity:0}
+  }
+
+  /* B안: 한 번에 탐색 (섹션별 썸네일 격자) */
+  body.ui-b #tocBtn,body.ui-b #thumbsBtn,body.ui-b #tocBtn + .sep{display:none}
+  body.ui-b #navBtn{display:inline-flex}
+  #nav{position:absolute;inset:0;z-index:55;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+  #nav[hidden]{display:none}
+  .nav-hd{flex:none;display:flex;align-items:center;justify-content:space-between;padding:14px 12px 8px 22px}
+  .nav-hd b{font-size:16px;font-weight:650}
+  .nav-hd small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+  .nav-body{flex:1;overflow:auto;padding:4px 22px 40px;-webkit-overflow-scrolling:touch}
+  .nav-sec{margin:18px 0 8px;display:flex;align-items:baseline;gap:10px}
+  .nav-sec b{font-size:13px;font-weight:650;letter-spacing:.02em}
+  .nav-sec span{font-size:12px;color:var(--muted)}
+  .nav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:12px}
+  .nv{cursor:pointer;color:var(--muted);font-size:11px;text-align:center}
+  .nv .fr{aspect-ratio:var(--r,0.707);border-radius:4px;overflow:hidden;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.16);border:2px solid transparent;transition:transform .15s,border-color .15s;position:relative}
+  .nv img{width:100%;height:100%;display:block;object-fit:cover}
+  .nv:hover .fr{transform:translateY(-2px)}
+  .nv.on .fr{border-color:var(--accent)} .nv.on{color:var(--accent);font-weight:600}
+  .nv .cap{display:block;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nv .tt{position:absolute;left:0;right:0;bottom:0;padding:22px 6px 5px;font-size:10.5px;line-height:1.25;color:#fff;text-align:left;background:linear-gradient(to top,rgba(0,0,0,.72),transparent);font-weight:600}
+  @media (max-width:700px){ .nav-body{padding:0 14px 40px} .nav-grid{grid-template-columns:repeat(3,1fr);gap:9px} .nav-sec{margin:14px 0 6px} }
+
+  /* C안: 표지 홈 + 섹션 칩 */
+  body.ui-c #homeBtn{display:inline-flex}
+  body.ui-c #tocBtn,body.ui-c #tocBtn + .sep{display:none}
+  body.ui-c #chips[hidden]{display:flex!important}
+  #chips{flex:none;display:flex;gap:6px;overflow-x:auto;padding:0 16px 8px;scrollbar-width:none;z-index:30;scroll-behavior:smooth}
+  #chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;padding:6px 12px;border-radius:999px;font-size:12.5px;background:var(--panel);border:1px solid var(--panel-line);color:var(--fg);cursor:pointer;white-space:nowrap;transition:background .15s,color .15s}
+  .chip:hover{background:color-mix(in srgb,var(--fg) 10%,transparent)}
+  .chip.on{background:var(--accent);color:#fff;border-color:transparent;font-weight:600}
+  #home{position:absolute;inset:0;z-index:58;background:var(--bgc, radial-gradient(ellipse at 50% 35%, var(--bg) 0%, var(--bg2) 100%));overflow:auto;padding-top:env(safe-area-inset-top)}
+  #home[hidden]{display:none}
+  .home-wrap{max-width:1040px;margin:0 auto;padding:48px 32px;display:grid;grid-template-columns:minmax(260px,420px) 1fr;gap:48px;align-items:start}
+  .home-cover img{width:100%;display:block;border-radius:4px;box-shadow:0 24px 60px rgba(0,0,0,.28)}
+  .home-kicker{font-size:11px;letter-spacing:.14em;color:var(--muted);font-weight:650}
+  .home-info h1{font-size:28px;line-height:1.25;margin:8px 0 6px;letter-spacing:-.01em;text-wrap:balance}
+  .home-info p{color:var(--muted);margin:0 0 18px;font-size:13.5px}
+  #homeStart{font-size:14px;padding:11px 20px;border-radius:10px}
+  .home-toc{margin-top:26px;border-top:1px solid var(--panel-line);padding-top:10px}
+  .home-toc .toc-sec{padding:12px 6px 3px}
+  .home-toc .toc-it{padding:7px 6px}
+  @media (max-width:700px){
+    .home-wrap{grid-template-columns:1fr;gap:22px;padding:22px 18px 40px}
+    .home-cover{max-width:62%;margin:0 auto}
+    .home-info h1{font-size:22px}
+    #chips{position:absolute;left:0;right:0;top:calc(52px + env(safe-area-inset-top));padding:4px 12px 8px;z-index:29;transition:transform .25s,opacity .25s;
+      background:linear-gradient(to bottom,color-mix(in srgb,var(--bg2) 85%,transparent),transparent)}
+    body.ui-c.chrome-hidden #chips{transform:translateY(-140%);opacity:0}
+  }
+
+  /* 데모용 안 전환 */
+  #uiSwitch{position:absolute;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:2px;padding:3px 4px 3px 10px;border-radius:999px;background:rgba(28,30,35,.9);color:#fff;font-size:11.5px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  #uiSwitch[hidden]{display:none}
+  #uiSwitch span{margin-right:4px;opacity:.8}
+  #uiSwitch button{border:0;background:transparent;color:#fff;font:inherit;font-weight:650;width:30px;height:26px;border-radius:999px;cursor:pointer}
+  #uiSwitch button.on{background:var(--accent)}
   @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
 </style>
 </head>
@@ -243,15 +340,21 @@ window.ZINE_CONFIG = {
     </div>
   </header>
 
+  <div id="chips" hidden></div>
   <main id="area">
-    <button id="prev" class="arrow" aria-label="이전 페이지"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
-    <div id="book"></div>
-    <button id="next" class="arrow" aria-label="다음 페이지"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+    <div id="stage">
+      <button id="prev" class="arrow" aria-label="이전 페이지"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div id="book"></div>
+      <button id="next" class="arrow" aria-label="다음 페이지"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
   </main>
+  <div id="strip" hidden><div class="strip-track" id="stripTrack"></div></div>
 
   <footer id="bottom">
     <input id="slider" type="range" min="1" max="1" value="1" aria-label="페이지 이동">
     <div id="tools">
+      <button id="homeBtn" class="ib" title="표지·목차" aria-label="표지·목차" hidden><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg></button>
+      <button id="navBtn" class="ib" title="탐색" aria-label="탐색" hidden><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></svg></button>
       <button id="tocBtn" class="ib" title="목차" aria-label="목차" hidden><svg viewBox="0 0 24 24"><path d="M4 6h12M4 12h16M4 18h10"/><circle cx="19" cy="6" r="1" fill="currentColor"/><circle cx="17" cy="18" r="1" fill="currentColor"/></svg></button>
       <button id="thumbsBtn" class="ib" title="페이지 보기" aria-label="페이지 보기"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></button>
       <span class="sep"></span>
@@ -259,11 +362,31 @@ window.ZINE_CONFIG = {
       <div id="pageinfo">– <small>/ –</small></div>
       <button id="nextBtn" class="ib" title="다음" aria-label="다음"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
       <span class="sep"></span>
-      <button id="zoomBtn" class="ib" title="확대해서 읽기" aria-label="확대"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4M11 8v6M8 11h6"/></svg></button>
+      <button id="zoomBtn" class="ib" title="확대 (두 번 탭 · 두 손가락 벌리기 · Ctrl+휠)" aria-label="확대"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4M11 8v6M8 11h6"/></svg></button>
       <button id="fsBtn" class="ib" title="전체화면" aria-label="전체화면"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
     </div>
   </footer>
 </div>
+
+<div id="nav" hidden>
+  <div class="nav-hd"><div><b>탐색</b><small id="navSub"></small></div><button id="navClose" class="ib" aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="nav-body" id="navBody"></div>
+</div>
+
+<div id="home" hidden>
+  <div class="home-wrap">
+    <div class="home-cover"><img id="homeCover" alt="표지"></div>
+    <div class="home-info">
+      <div class="home-kicker">MENSA KOREA JOURNAL</div>
+      <h1 id="homeTitle"></h1>
+      <p id="homeMeta"></p>
+      <button id="homeStart" class="btn pri">처음부터 읽기</button>
+      <div class="home-toc" id="homeToc"></div>
+    </div>
+  </div>
+</div>
+
+<div id="uiSwitch" hidden><span>UI 안</span><button data-ui="a">A</button><button data-ui="b">B</button><button data-ui="c">C</button></div>
 
 <div id="thumbs">
   <div class="hd"><span><b>페이지</b> <span id="thumbsCount"></span></span><button id="thumbsClose" class="ib" style="width:32px;height:32px" aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -287,18 +410,6 @@ window.ZINE_CONFIG = {
   <div class="list" id="logList"></div>
 </div>
 
-<div id="zoom" hidden>
-  <div id="zoomBar">
-    <div class="grp"><span id="zoomInfo"></span></div>
-    <div class="grp">
-      <button id="zoomOut" class="ib" aria-label="축소"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
-      <button id="zoomIn" class="ib" aria-label="확대"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
-      <button id="zoomClose" class="ib" aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-    </div>
-  </div>
-  <div id="zoomScroll"><div id="zoomInner"></div></div>
-</div>
-
 <div id="loader">
   <div class="book"><i></i><i></i><i></i></div>
   <div class="t" id="loaderTitle"></div>
@@ -306,6 +417,7 @@ window.ZINE_CONFIG = {
   <div class="bar"><i id="loaderBar"></i></div>
 </div>
 <div id="toast"></div>
+<div id="zoomHint"><span id="zoomPct">200%</span><button id="zoomReset">원래 크기</button></div>
 
 <!-- StPageFlip v2.0.7 (MIT License, Copyright (c) 2020 Nodlik) — https://github.com/Nodlik/StPageFlip -->
 <script>
@@ -327,6 +439,9 @@ window.ZINE_CONFIG = {
   let ZINE_ID = (qs.get('zine') || cfg.ZINE_ID || '').replace(/[^a-z0-9_]/gi, '_').toLowerCase();
   let TITLE = cfg.TITLE || '';
   const EDIT = qs.get('edit') === '1';
+  const DEEP_LINK = /p=\d+/.test(location.hash) || qs.has('p');
+  let UI = EDIT ? 'base' : String(qs.get('ui') || cfg.UI || 'base').toLowerCase();
+  if (['a','b','c'].includes(UI)) document.body.classList.add('ui-' + UI);
 
   /* ---------- 추적 (GA4) ---------- */
   let gtagReady = false;
@@ -347,10 +462,9 @@ window.ZINE_CONFIG = {
   }
 
   /* ---------- DOM ---------- */
-  const areaEl=$('area'), bookEl=$('book'), sliderEl=$('slider'), pageInfo=$('pageinfo'),
+  const areaEl=$('stage'), bookEl=$('book'), sliderEl=$('slider'), pageInfo=$('pageinfo'),
         prevA=$('prev'), nextA=$('next'), prevBtn=$('prevBtn'), nextBtn=$('nextBtn'),
         thumbsEl=$('thumbs'), thumbTrack=$('thumbTrack'), thumbsBtn=$('thumbsBtn'),
-        zoomEl=$('zoom'), zoomScroll=$('zoomScroll'), zoomInner=$('zoomInner'), zoomInfo=$('zoomInfo'),
         loader=$('loader'), loaderBar=$('loaderBar'), loaderMsg=$('loaderMsg'), toastEl=$('toast'), dl=$('dl'),
         tocEl=$('toc'), tocList=$('tocList'), tocBtn=$('tocBtn'), tocSub=$('tocSub');
 
@@ -360,7 +474,7 @@ window.ZINE_CONFIG = {
   let visible=[], enteredAt=0, totalSec=0, maxPage=0, exitSent=false; const seen=new Set();
   let OFFSET=0, toc=[];
   const pdfPageCache=new Map(); const getPdfPage = n => { if (!pdfPageCache.has(n)) pdfPageCache.set(n, pdf.getPage(n)); return pdfPageCache.get(n); };
-  const imgUrl = (kind, i) => book.img[kind].replace('{n}', String(i+1).padStart(book.img.pad || 3, '0'));
+  const imgUrl = (kind, i) => book.data ? ((book.data[kind] && book.data[kind][i]) || book.data.pages[i]) : book.img[kind].replace('{n}', String(i+1).padStart(book.img.pad || 3, '0'));
 
   /* ---------- 체류시간 / 이탈 ---------- */
   function flushTime(){
@@ -380,9 +494,9 @@ window.ZINE_CONFIG = {
   let toastT;
   function toast(msg, ms){ toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('show'), ms || 2200); }
   let chromeT;
-  function showChrome(auto){ document.body.classList.remove('chrome-hidden'); clearTimeout(chromeT); if (auto && small()) chromeT = setTimeout(() => { if (!anyPanelOpen()) document.body.classList.add('chrome-hidden'); }, 3500); }
+  function showChrome(auto){ document.body.classList.remove('chrome-hidden'); clearTimeout(chromeT); if (auto && small() && UI !== 'a') chromeT = setTimeout(() => { if (!anyPanelOpen()) document.body.classList.add('chrome-hidden'); }, 3500); }
   function toggleChrome(){ if (document.body.classList.contains('chrome-hidden')) showChrome(true); else { clearTimeout(chromeT); document.body.classList.add('chrome-hidden'); } }
-  const anyPanelOpen = () => tocEl.classList.contains('open') || thumbsEl.classList.contains('open') || $('log').classList.contains('open') || !zoomEl.hidden;
+  const anyPanelOpen = () => tocEl.classList.contains('open') || thumbsEl.classList.contains('open') || $('log').classList.contains('open') || !$('nav').hidden || !$('home').hidden;
 
   /* ---------- 레이아웃 ---------- */
   const MIN_PAGE_W = 300;
@@ -468,10 +582,11 @@ window.ZINE_CONFIG = {
     if (!pageFlip) return;
     const vis = currentVisible();
     if (vis.join() === visible.join()) return;
+    if (zoomed()) { zs = 1; applyZoom(true); }
     flushTime(); visible = vis; enteredAt = performance.now();
     for (const i of vis) { seen.add(i); if (i+1 > maxPage) maxPage = i+1;
       track('zine_page_view', { page_number: i+1, page_pct: Math.round((i+1)/N*100), view_mode: portrait ? 'single' : 'spread' }); }
-    updateUI(); if (tocEl.classList.contains('open')) renderToc(); loadAround(vis[0]);
+    updateUI(); if (tocEl.classList.contains('open') || UI === 'a') renderToc(); loadAround(vis[0]);
   }
   function updateUI(){
     const first = visible[0], last = visible[visible.length-1];
@@ -480,6 +595,7 @@ window.ZINE_CONFIG = {
     prevA.disabled = prevBtn.disabled = first === 0; nextA.disabled = nextBtn.disabled = last >= N-1;
     try { history.replaceState(null, '', '#p=' + (first+1)); } catch(e){}
     thumbTrack.querySelectorAll('.th').forEach(t => t.classList.toggle('on', visible.includes(+t.dataset.i)));
+    if (UI === 'a') updateStrip(); if (UI === 'c') updateChips();
   }
   function goTo(i){
     i = Math.max(0, Math.min(N-1, i|0)); if (!pageFlip || visible.includes(i)) return;
@@ -494,38 +610,110 @@ window.ZINE_CONFIG = {
   sliderEl.addEventListener('input', () => { const v = +sliderEl.value; sliderEl.style.setProperty('--pct', ((v-1)/(N-1||1)*100)+'%'); pageInfo.innerHTML = `${v} <small>/ ${N}</small>`; showChrome(false); });
   sliderEl.addEventListener('change', () => { goTo(+sliderEl.value - 1); showChrome(true); });
   document.addEventListener('keydown', e => {
-    if (!zoomEl.hidden) { if (e.key === 'Escape') closeZoom(); return; }
-    if (e.key === 'Escape') { closeThumbs(); closeToc(); return; }
+    if (e.key === 'Escape' && zoomed()) { resetZoom(); return; }
+    if (e.key === 'Escape') { closeThumbs(); closeToc(); if (!$('nav').hidden) closeNav(); return; }
+    if (e.key === '+' || e.key === '=') { setZoom(zs * 1.25, null, true); }
+    if (e.key === '-') { setZoom(zs / 1.25, null, true); }
     if (e.target && /^(input|textarea|select)$/i.test(e.target.tagName)) return;
     if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); next(); }
     if (e.key === 'ArrowLeft'  || e.key === 'PageUp') { e.preventDefault(); prev(); }
     if (e.key === 'Home') goTo(0);
     if (e.key === 'End') goTo(N-1);
   });
-  // 터치: 탭으로 넘기기 (왼쪽 30% 이전 · 오른쪽 30% 다음 · 가운데 메뉴 숨기기/보이기 · 두 손가락 = 확대)
-  let t0 = null, pinching = false, lastTap = 0, midTapT = null;
-  bookEl.addEventListener('touchstart', e => {
-    if (e.touches.length >= 2) { pinching = true; t0 = null; return; }
-    const t = e.touches[0]; t0 = { x: t.clientX, y: t.clientY, time: Date.now(), target: e.target };
+  /* ---------- 제자리 확대 (핀치 · 두 번 탭 · 휠 · 드래그) ---------- */
+  let zs = 1, ztx = 0, zty = 0;                 // scale, translate (px, stage 좌표)
+  const zoomed = () => zs > 1.001;
+  function bookBase(){ const st = areaEl.getBoundingClientRect(); const bw = parseFloat(bookEl.style.width) || 0, bh = parseFloat(bookEl.style.height) || 0; return { sx: st.left, sy: st.top, sw: st.width, sh: st.height, bx: (st.width - bw) / 2, by: (st.height - bh) / 2, bw, bh }; }
+  function clampT(){
+    const b = bookBase(); const w = b.bw * zs, h = b.bh * zs;
+    if (w <= b.sw) ztx = (b.sw - w) / 2 - b.bx; else ztx = Math.min(-b.bx, Math.max(b.sw - b.bx - w, ztx));
+    if (h <= b.sh) zty = (b.sh - h) / 2 - b.by; else zty = Math.min(-b.by, Math.max(b.sh - b.by - h, zty));
+  }
+  function applyZoom(anim){
+    if (zs <= 1.001) { zs = 1; ztx = 0; zty = 0; }
+    clampT();
+    bookEl.classList.toggle('anim', !!anim);
+    bookEl.style.transform = zs === 1 ? '' : `translate(${ztx.toFixed(1)}px, ${zty.toFixed(1)}px) scale(${zs.toFixed(4)})`;
+    document.body.classList.toggle('zoomed', zs > 1);
+    $('zoomBtn').classList.toggle('on', zs > 1); $('zoomPct').textContent = Math.round(zs * 100) + '%';
+    if (zs > 1.15) loadHiRes();
+  }
+  // focal: stage 기준 좌표 {x,y}. 그 지점 아래 내용이 그대로 있도록 확대/축소
+  function setZoom(s, focal, anim){
+    const ns = Math.max(1, Math.min(4, s)); const b = bookBase();
+    const f = focal || { x: b.sw / 2, y: b.sh / 2 };
+    const cx = (f.x - b.bx - ztx) / zs, cy = (f.y - b.by - zty) / zs;      // 내용 좌표
+    ztx = f.x - b.bx - cx * ns; zty = f.y - b.by - cy * ns; zs = ns;
+    applyZoom(anim);
+    if (ns > 1 && !zoomHinted) { zoomHinted = true; try { localStorage.setItem('zine_zoom_hint', '1'); } catch(e){} }
+  }
+  function resetZoom(){ if (!zoomed()) return; zs = 1; applyZoom(true); }
+  let zoomHinted = false; try { zoomHinted = !!localStorage.getItem('zine_zoom_hint'); } catch(e){}
+  const stagePt = e => { const r = areaEl.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  let hiLoaded = new Set();
+  function loadHiRes(){
+    if (!book) return;
+    for (const i of visible) { if (hiLoaded.has(i)) continue; hiLoaded.add(i); const P = pages[i]; const hi = new Image(); hi.decoding = 'async'; hi.onload = () => { if (P.ready) P.img.src = hi.src; }; hi.src = imgUrl('hi', i); }
+  }
+  $('zoomBtn').onclick = () => { if (zoomed()) resetZoom(); else { setZoom(2, null, true); track('zine_zoom', { page_number: (visible[0]||0)+1, how: 'button' }); } };
+  $('zoomReset').onclick = resetZoom;
+
+  // ---- 터치: 탭으로 넘기기 + 핀치/팬 ----
+  let t0 = null, lastTap = 0, midTapT = null;
+  let pinch = null, pan = null;
+  const dist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  const mid = (a, b) => { const r = areaEl.getBoundingClientRect(); return { x: (a.clientX + b.clientX) / 2 - r.left, y: (a.clientY + b.clientY) / 2 - r.top }; };
+  function stopFlipTouch(){ try { pageFlip.userStop({ x: 0, y: 0 }, true); pageFlip.getFlipController().stopMove(); } catch(err){} }
+  areaEl.addEventListener('touchstart', e => {
+    if (e.touches.length >= 2) { t0 = null; pan = null; stopFlipTouch(); pinch = { d0: dist(e.touches[0], e.touches[1]), s0: zs }; bookEl.classList.remove('anim'); return; }
+    const t = e.touches[0];
+    if (zoomed()) { pan = { x: t.clientX, y: t.clientY, tx: ztx, ty: zty, moved: false }; bookEl.classList.remove('anim'); }
+    t0 = { x: t.clientX, y: t.clientY, time: Date.now(), target: e.target };
   }, { passive: true });
-  bookEl.addEventListener('touchend', e => {
-    if (pinching) { if (e.touches.length === 0) { pinching = false; openZoom(); } return; }
+  areaEl.addEventListener('touchmove', e => {
+    if (pinch && e.touches.length >= 2) { e.preventDefault(); e.stopPropagation(); setZoom(pinch.s0 * dist(e.touches[0], e.touches[1]) / pinch.d0, mid(e.touches[0], e.touches[1]), false); return; }
+    if (pan && e.touches.length === 1) { const t = e.touches[0]; const dx = t.clientX - pan.x, dy = t.clientY - pan.y; if (Math.hypot(dx, dy) > 4) pan.moved = true; ztx = pan.tx + dx; zty = pan.ty + dy; applyZoom(false); e.preventDefault(); e.stopPropagation(); }
+  }, { passive: false });
+  areaEl.addEventListener('touchend', e => {
+    if (pinch) { e.stopPropagation(); if (e.touches.length === 0) { pinch = null; if (zs < 1.08) resetZoom(); else { track('zine_zoom', { page_number: (visible[0]||0)+1, how: 'pinch' }); applyZoom(true); } } return; }
+    if (pan) { const moved = pan.moved; pan = null; if (moved) { e.preventDefault(); e.stopPropagation(); t0 = null; return; } }
     if (!t0) return;
     const t = e.changedTouches[0], dx = t.clientX - t0.x, dy = t.clientY - t0.y, dt = Date.now() - t0.time, tgt = t0.target; t0 = null;
     if (tgt && tgt.closest && tgt.closest('a')) return;
-    if (Math.hypot(dx, dy) > 12 || dt > 400) return;                   // 스와이프·드래그는 플립북이 처리
-    // 탭은 우리가 처리: 플립북의 터치 상태를 먼저 비워서 손떨림을 드래그로 오해하지 않게 함
-    try { pageFlip.userStop({ x: 0, y: 0 }, true); pageFlip.getFlipController().stopMove(); } catch(err){}
-    const r = bookEl.getBoundingClientRect(), fx = (t.clientX - r.left) / r.width;
-    if (fx < 0.3) { prev(); showChrome(true); return; }
-    if (fx > 0.7) { next(); showChrome(true); return; }
-    const now = Date.now();
-    if (now - lastTap < 320) { lastTap = 0; clearTimeout(midTapT); openZoom(); return; }
-    lastTap = now; clearTimeout(midTapT); midTapT = setTimeout(toggleChrome, 320);
+    if (Math.hypot(dx, dy) > 12 || dt > 400) return;
+    const now = Date.now(); const r = bookEl.getBoundingClientRect(); const onBook = t.clientX >= r.left && t.clientX <= r.right && t.clientY >= r.top && t.clientY <= r.bottom;
+    // 두 번 탭: 확대 ↔ 원래 크기
+    if (now - lastTap < 320) { lastTap = 0; clearTimeout(midTapT); e.preventDefault(); if (zoomed()) resetZoom(); else if (onBook) { setZoom(2.5, stagePt(t), true); track('zine_zoom', { page_number: (visible[0]||0)+1, how: 'doubletap' }); } return; }
+    lastTap = now;
+    if (zoomed()) return;                                           // 확대 중엔 탭으로 넘기지 않음
+    if (!onBook) { midTapT = setTimeout(toggleChrome, 320); return; }
+    stopFlipTouch();
+    const fx = (t.clientX - r.left) / r.width;
+    if (fx < 0.3) { midTapT = setTimeout(() => { prev(); showChrome(true); }, 0); return; }
+    if (fx > 0.7) { midTapT = setTimeout(() => { next(); showChrome(true); }, 0); return; }
+    midTapT = setTimeout(toggleChrome, 320);
   }, { passive: false });
-  bookEl.addEventListener('dblclick', e => { if (!isTouch && !(e.target.closest && e.target.closest('a'))) openZoom(); });
+  // ---- 마우스: 클릭 넘김(더블클릭이면 취소), 더블클릭 확대, 드래그 팬, Ctrl+휠 ----
+  let mpan = null, clickT = null;
+  bookEl.addEventListener('click', e => {
+    if (isTouch || zoomed() || (e.target.closest && e.target.closest('a,button'))) return;
+    let st = 'read'; try { st = pageFlip.getState(); } catch(err){}
+    if (st !== 'read') return;                                       // 모서리 드래그/클릭으로 이미 넘기는 중
+    const r = bookEl.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width;
+    clearTimeout(clickT);
+    if (fx < 0.3 || fx > 0.7) clickT = setTimeout(() => { fx < 0.3 ? prev() : next(); }, 240);
+  });
+  areaEl.addEventListener('dblclick', e => { clearTimeout(clickT); if (isTouch || (e.target.closest && e.target.closest('a'))) return; e.preventDefault(); if (zoomed()) resetZoom(); else { setZoom(2.2, stagePt(e), true); track('zine_zoom', { page_number: (visible[0]||0)+1, how: 'dblclick' }); } });
+  areaEl.addEventListener('mousedown', e => { if (!zoomed() || e.button !== 0 || (e.target.closest && e.target.closest('a,button'))) return; mpan = { x: e.clientX, y: e.clientY, tx: ztx, ty: zty }; document.body.classList.add('panning'); bookEl.classList.remove('anim'); e.preventDefault(); });
+  window.addEventListener('mousemove', e => { if (!mpan) return; ztx = mpan.tx + e.clientX - mpan.x; zty = mpan.ty + e.clientY - mpan.y; applyZoom(false); });
+  window.addEventListener('mouseup', () => { mpan = null; document.body.classList.remove('panning'); });
+  areaEl.addEventListener('wheel', e => {
+    if (e.ctrlKey || e.metaKey) { e.preventDefault(); setZoom(zs * (e.deltaY < 0 ? 1.12 : 0.89), stagePt(e), false); if (zs <= 1.001) applyZoom(true); return; }
+    if (zoomed()) { e.preventDefault(); ztx -= e.deltaX; zty -= e.deltaY; applyZoom(false); }
+  }, { passive: false });
+
   let rT;
-  window.addEventListener('resize', () => { if (!N) return; layout(); clearTimeout(rT); rT = setTimeout(() => { if (pageFlip) { pageFlip.update(); onSpreadChange(); if (!book) pages.forEach((p,i) => { if (p.ready) renderPdfPage(i); }); } }, 200); });
+  window.addEventListener('resize', () => { if (!N) return; zs = 1; applyZoom(false); layout(); clearTimeout(rT); rT = setTimeout(() => { if (pageFlip) { pageFlip.update(); onSpreadChange(); if (!book) pages.forEach((p,i) => { if (p.ready) renderPdfPage(i); }); } }, 200); });
 
   /* ---------- 썸네일 ---------- */
   let thumbsBuilt = false;
@@ -600,52 +788,102 @@ window.ZINE_CONFIG = {
     $('tocReset').onclick = () => { if (toc.length && !confirm('목차 항목을 모두 지울까요?')) return; toc = []; saveDraft(); };
   }
 
-  /* ---------- 확대 보기 ---------- */
-  let zoomScale = 1, zoomBaseH = 0;
-  function applyZoom(){ zoomInner.style.setProperty('--zh', Math.round(zoomBaseH * zoomScale) + 'px'); zoomInfo.textContent = Math.round(zoomScale*100) + '%'; }
-  async function openZoom(){
-    if (!N || !visible.length || !zoomEl.hidden) return;
-    zoomInner.innerHTML = ''; zoomEl.hidden = false;
-    zoomBaseH = Math.max(zoomScroll.clientHeight - 24, 300); zoomScale = small() && visible.length === 1 ? 1.6 : 1; applyZoom();
-    track('zine_zoom', { page_number: visible[0]+1 });
-    for (const i of visible) {
-      if (book) {
-        const img = document.createElement('img'); img.alt = ''; img.decoding = 'async';
-        img.src = pages[i].ready ? imgUrl('pages', i) : imgUrl('pages', i);
-        zoomInner.appendChild(img);
-        const hi = new Image(); hi.decoding = 'async'; hi.onload = () => { if (!zoomEl.hidden) img.src = hi.src; }; hi.src = imgUrl('hi', i);
-      } else {
-        const page = await getPdfPage(i+1), base = page.getViewport({ scale:1 }), dpr = Math.min(window.devicePixelRatio||1, 2);
-        const vp = page.getViewport({ scale: Math.min(3000, zoomBaseH * 2.2 * dpr) / base.height });
-        const c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height); zoomInner.appendChild(c);
-        await page.render({ canvasContext: c.getContext('2d', { alpha:false }), viewport: vp }).promise;
-      }
+  /* ================= 화면 구성 안 ================= */
+  const pn = i => i + 1 - OFFSET;                                    // PDF index → 표기 쪽
+  function articles(){                                               // 목차 → 글 목록 [{section,title,start,end}]
+    const out = []; let sec = '';
+    for (const it of toc) { if (it.title == null) { sec = it.section || ''; continue; } out.push({ section: sec, title: it.title, start: toPdf(it.page) - 1 }); }
+    out.sort((a, b) => a.start - b.start);
+    out.forEach((a, k) => { a.end = k + 1 < out.length ? out[k+1].start - 1 : N - 1; });
+    return out;
+  }
+  // ---- A안: 필름스트립 ----
+  const stripEl = $('strip'), stripTrack = $('stripTrack');
+  function buildStrip(){
+    if (!book || stripTrack.children.length) return;
+    const secOf = {}; for (const a of articles()) if (a.section && !(a.start in secOf)) secOf[a.start] = a.section;
+    for (let i = 0; i < N; i++) {
+      const el = document.createElement('div'); el.className = 'st' + (secOf[i] ? ' sec' : ''); el.dataset.i = i; el.style.setProperty('--r', ratio);
+      if (secOf[i]) el.dataset.sec = secOf[i];
+      el.innerHTML = `<img loading="lazy" decoding="async" alt="" src="${imgUrl('thumbs', i)}"><i>${i+1}</i>`;
+      el.onclick = () => goTo(i); stripTrack.appendChild(el);
     }
-    if (small() && visible.length === 1) setTimeout(() => { zoomScroll.scrollLeft = (zoomScroll.scrollWidth - zoomScroll.clientWidth) / 2; }, 50);
   }
-  function closeZoom(){ zoomEl.hidden = true; zoomInner.innerHTML = ''; showChrome(true); }
-  function setZoom(s, cx, cy){
-    const prevS = zoomScale; zoomScale = Math.max(1, Math.min(5, s));
-    const ax = cx ?? zoomScroll.clientWidth/2, ay = cy ?? zoomScroll.clientHeight/2;
-    const rx = zoomScroll.scrollLeft + ax, ry = zoomScroll.scrollTop + ay; applyZoom();
-    zoomScroll.scrollLeft = rx * zoomScale/prevS - ax; zoomScroll.scrollTop = ry * zoomScale/prevS - ay;
+  function updateStrip(){
+    stripTrack.querySelectorAll('.st').forEach(t => t.classList.toggle('on', visible.includes(+t.dataset.i)));
+    const on = stripTrack.querySelector('.st.on'); if (on) { const r = on.getBoundingClientRect(), tr = stripTrack.getBoundingClientRect(); if (r.left < tr.left + 20 || r.right > tr.right - 20) on.scrollIntoView({ inline: 'center', block: 'nearest' }); }
   }
-  $('zoomBtn').onclick = openZoom; $('zoomClose').onclick = closeZoom;
-  $('zoomIn').onclick = () => setZoom(zoomScale * 1.25); $('zoomOut').onclick = () => setZoom(zoomScale / 1.25);
-  zoomScroll.addEventListener('dblclick', e => setZoom(zoomScale > 1.5 ? 1 : 2.2, e.clientX, e.clientY));
-  zoomScroll.addEventListener('wheel', e => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); setZoom(zoomScale * (e.deltaY < 0 ? 1.1 : 0.9), e.clientX, e.clientY); } }, { passive:false });
-  let drag = null;
-  zoomScroll.addEventListener('mousedown', e => { drag = { x:e.clientX, y:e.clientY, sl:zoomScroll.scrollLeft, st:zoomScroll.scrollTop }; zoomScroll.classList.add('drag'); e.preventDefault(); });
-  window.addEventListener('mousemove', e => { if (!drag) return; zoomScroll.scrollLeft = drag.sl - (e.clientX - drag.x); zoomScroll.scrollTop = drag.st - (e.clientY - drag.y); });
-  window.addEventListener('mouseup', () => { drag = null; zoomScroll.classList.remove('drag'); });
-  let pinch = null; const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
-  zoomScroll.addEventListener('touchstart', e => { if (e.touches.length === 2) pinch = { d: dist(e.touches), s: zoomScale }; }, { passive:true });
-  zoomScroll.addEventListener('touchmove', e => { if (pinch && e.touches.length === 2) { e.preventDefault(); setZoom(pinch.s * dist(e.touches)/pinch.d, (e.touches[0].clientX+e.touches[1].clientX)/2, (e.touches[0].clientY+e.touches[1].clientY)/2); } }, { passive:false });
-  zoomScroll.addEventListener('touchend', () => { pinch = null; }, { passive:true });
-  let zt = null;
-  zoomScroll.addEventListener('touchstart', e => { if (e.touches.length === 1) zt = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() }; }, { passive:true });
-  zoomScroll.addEventListener('touchend', e => { if (!zt) return; const t = e.changedTouches[0]; const tap = Math.hypot(t.clientX-zt.x, t.clientY-zt.y) < 10 && Date.now()-zt.t < 300; zt = null;
-    if (tap) { const now = Date.now(); if (now - lastTap < 320) { lastTap = 0; setZoom(zoomScale > 1.8 ? 1 : 2.5, t.clientX, t.clientY); } else lastTap = now; } }, { passive:true });
+  // ---- B안: 한 번에 탐색 ----
+  const navEl = $('nav'), navBody = $('navBody');
+  function buildNav(){
+    if (navBody.children.length) return;
+    const arts = articles(); const groups = [];
+    if (!arts.length) groups.push({ section: '전체', items: [{ title: '', start: 0, end: N-1 }] });
+    else {
+      if (arts[0].start > 0) groups.push({ section: '표지·목차', items: [{ title: '', start: 0, end: arts[0].start - 1 }] });
+      for (const a of arts) { const g = groups[groups.length-1]; if (g && g.section === (a.section || '기타')) g.items.push(a); else groups.push({ section: a.section || '기타', items: [a] }); }
+    }
+    for (const g of groups) {
+      const pagesN = g.items.reduce((s, a) => s + (a.end - a.start + 1), 0);
+      const hd = document.createElement('div'); hd.className = 'nav-sec'; hd.innerHTML = `<b></b><span>${pagesN}쪽</span>`; hd.querySelector('b').textContent = g.section; navBody.appendChild(hd);
+      const grid = document.createElement('div'); grid.className = 'nav-grid';
+      for (const a of g.items) for (let i = a.start; i <= a.end; i++) {
+        const el = document.createElement('div'); el.className = 'nv'; el.dataset.i = i;
+        el.innerHTML = `<div class="fr" style="--r:${ratio}"><img loading="lazy" decoding="async" alt="" src="${imgUrl('thumbs', i)}">${i === a.start && a.title ? '<div class="tt"></div>' : ''}</div><span class="cap">${OFFSET ? (pn(i) > 0 ? pn(i) + '쪽' : '표지') : (i+1) + '쪽'}</span>`;
+        if (i === a.start && a.title) el.querySelector('.tt').textContent = a.title;
+        el.onclick = () => { track('zine_nav_click', { to_page: i+1 }); closeNav(); goTo(i); };
+        grid.appendChild(el);
+      }
+      navBody.appendChild(grid);
+    }
+  }
+  function openNav(){ buildNav(); $('navSub').textContent = `${N}쪽 · 눌러서 이동`; navEl.hidden = false; navBody.querySelectorAll('.nv').forEach(t => t.classList.toggle('on', visible.includes(+t.dataset.i)));
+    track('zine_nav_open', { page_number: (visible[0]||0)+1 }); const on = navBody.querySelector('.nv.on'); if (on) setTimeout(() => on.scrollIntoView({ block: 'center' }), 30); }
+  function closeNav(){ navEl.hidden = true; showChrome(true); }
+  $('navBtn').onclick = openNav; $('navClose').onclick = closeNav;
+  // ---- C안: 표지 홈 + 섹션 칩 ----
+  const homeEl = $('home'), chipsEl = $('chips');
+  function buildHome(){
+    if ($('homeToc').children.length) return;
+    $('homeCover').src = book ? (book.cover || imgUrl('pages', 0)) : ''; $('homeTitle').textContent = TITLE; $('homeMeta').textContent = `${N}쪽 · 멘사코리아 회원 소식지`;
+    const box = $('homeToc');
+    for (const it of toc) {
+      if (it.title == null) { const sdiv = document.createElement('div'); sdiv.className = 'toc-sec'; sdiv.innerHTML = '<span class="tt"></span>'; sdiv.querySelector('.tt').textContent = it.section || ''; box.appendChild(sdiv); continue; }
+      const el = document.createElement('div'); el.className = 'toc-it'; el.innerHTML = '<span class="tt"></span><span class="dots"></span><span class="pn"></span>';
+      el.querySelector('.tt').textContent = it.title; el.querySelector('.pn').textContent = it.page;
+      el.onclick = () => { track('zine_home_toc_click', { to_page: toPdf(it.page) }); closeHome(); goTo(toPdf(it.page) - 1); }; box.appendChild(el);
+    }
+    $('homeStart').onclick = () => { closeHome(); goTo(0); };
+  }
+  function openHome(){ buildHome(); homeEl.hidden = false; homeEl.scrollTop = 0; track('zine_home_open', { page_number: (visible[0]||0)+1 }); }
+  function closeHome(){ homeEl.hidden = true; showChrome(true); }
+  $('homeBtn').onclick = openHome;
+  function buildChips(){
+    if (chipsEl.children.length) return;
+    const arts = articles(); const secs = [];
+    for (const a of arts) { if (a.section && !secs.some(s => s.name === a.section)) secs.push({ name: a.section, start: a.start, end: a.end }); else if (a.section) secs[secs.findIndex(s => s.name === a.section)].end = a.end; }
+    const list = secs.length ? secs : arts.map(a => ({ name: a.title, start: a.start, end: a.end }));
+    const cover = document.createElement('button'); cover.className = 'chip'; cover.textContent = '표지'; cover.dataset.s = 0; cover.dataset.e = list.length ? list[0].start - 1 : N - 1; cover.onclick = () => goTo(0); chipsEl.appendChild(cover);
+    for (const sc of list) { const b = document.createElement('button'); b.className = 'chip'; b.textContent = sc.name; b.dataset.s = sc.start; b.dataset.e = sc.end; b.onclick = () => { track('zine_chip_click', { to_page: sc.start+1, title: sc.name.slice(0,40) }); goTo(sc.start); }; chipsEl.appendChild(b); }
+  }
+  function updateChips(){
+    const cur = visible.length ? visible[visible.length-1] : 0; let onEl = null;
+    chipsEl.querySelectorAll('.chip').forEach(c => { const on = cur >= +c.dataset.s && cur <= +c.dataset.e; c.classList.toggle('on', on); if (on) onEl = c; });
+    if (onEl) onEl.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }
+  // ---- 안 적용 / 데모 전환 ----
+  function applyUI(u){
+    UI = u; document.body.classList.remove('ui-a', 'ui-b', 'ui-c'); if (['a','b','c'].includes(u)) document.body.classList.add('ui-' + u);
+    closeNav(); closeHome(); closeThumbs(); closeToc();
+    if (u === 'a') { $('area').prepend(tocEl); renderToc(); buildStrip(); }
+    else if (tocEl.parentElement === $('area')) { document.body.insertBefore(tocEl, $('log')); }
+    $('navBtn').hidden = u !== 'b'; $('homeBtn').hidden = u !== 'c';
+    if (u === 'c') { buildChips(); }
+    layout(); if (pageFlip) { pageFlip.update(); updateUI(); loadAround(visible[0] || 0); }
+    showChrome(true);
+    $('uiSwitch').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.ui === u));
+  }
+  if (cfg.DEMO_UI_SWITCH) { const sw = $('uiSwitch'); sw.hidden = false; sw.querySelectorAll('button').forEach(b => { b.onclick = () => { applyUI(b.dataset.ui); track('zine_ui_switch', { ui: b.dataset.ui }); }; }); }
 
   /* ---------- 전체화면 / 공유 / 다운로드 ---------- */
   const fsBtn = $('fsBtn');
@@ -679,9 +917,10 @@ window.ZINE_CONFIG = {
   (async function init(){
     if (!window.St) return fail('뷰어 구성요소를 불러오지 못했습니다.');
     // 1) 데이터 준비
-    if (cfg.BOOK_URL) {
-      try { const r = await fetch(cfg.BOOK_URL, { cache: 'no-cache' }); if (!r.ok) throw new Error(r.status); book = await r.json(); }
-      catch(e) { console.error(e); return fail('페이지 정보(' + cfg.BOOK_URL + ')를 찾지 못했습니다.'); }
+    if (cfg.BOOK_DATA || cfg.BOOK_URL) {
+      if (cfg.BOOK_DATA) book = cfg.BOOK_DATA;
+      else { try { const r = await fetch(cfg.BOOK_URL, { cache: 'no-cache' }); if (!r.ok) throw new Error(r.status); book = await r.json(); }
+      catch(e) { console.error(e); return fail('페이지 정보(' + cfg.BOOK_URL + ')를 찾지 못했습니다.'); } }
       N = book.pages; ratio = book.ratio || ratio;
       if (!ZINE_ID) ZINE_ID = (book.zine_id || 'zine').replace(/[^a-z0-9_]/gi, '_').toLowerCase();
       if (!TITLE) TITLE = book.title || '회지';
@@ -725,7 +964,7 @@ window.ZINE_CONFIG = {
     pageFlip = new St.PageFlip(bookEl, {
       width: Math.round(ratio*1000), height: 1000, size: 'stretch', minWidth: 1, maxWidth: 10000, minHeight: 1, maxHeight: 10000,
       usePortrait: true, autoSize: false, showCover: true, drawShadow: true, maxShadowOpacity: 0.35,
-      flippingTime: small() ? 450 : 650, mobileScrollSupport: false, swipeDistance: 25, startPage: startIdx, showPageCorners: !isTouch
+      flippingTime: small() ? 450 : 650, mobileScrollSupport: false, swipeDistance: 25, startPage: startIdx, showPageCorners: !isTouch, disableFlipByClick: true
     });
     pageFlip.on('flip', onSpreadChange);
     pageFlip.on('changeOrientation', () => setTimeout(onSpreadChange, 0));
@@ -735,6 +974,8 @@ window.ZINE_CONFIG = {
     pageFlip.getSettings().minWidth = portrait ? 1e6 : 1;
     pageFlip.update(); onSpreadChange();
     tocBtn.hidden = !(toc.length || EDIT);
+    applyUI(UI);
+    if (UI === 'c' && !DEEP_LINK) openHome();
     bookEl.classList.add('show'); loader.classList.add('hide');
     if (EDIT) setTimeout(openToc, 600);
     else if (small()) { setTimeout(() => toast('좌우로 밀거나 화면 양쪽을 눌러 넘겨 보세요', 2800), 700); showChrome(true); }
